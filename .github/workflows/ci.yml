@@ -1,22 +1,66 @@
-name: CI
+name: Tests and SonarQube
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
 
 jobs:
-  build-test:
+  test-and-analyze:
+    name: PHPUnit coverage and SonarQube analysis
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - uses: php-actions/composer@v6
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: curl, dom, json, sqlite3
+          coverage: xdebug
+          tools: composer:v2
 
-      - name: PHPUnit Tests
-        uses: php-actions/phpunit@master
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run tests with coverage
         env:
           TEST_NAME: Scarlett
+          XDEBUG_MODE: coverage
+        run: composer test:coverage
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
         with:
-          version: 9.6
-          bootstrap: vendor/autoload.php
-          configuration: test/phpunit.xml
-          args: --coverage-text
+          name: phpunit-reports
+          path: |
+            build/logs/clover.xml
+            build/logs/junit.xml
+          if-no-files-found: error
+
+      - name: Analyze with SonarQube
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+
+      - name: Explain skipped SonarQube analysis
+        if: ${{ env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' }}
+        run: |
+          echo "SonarQube analysis was skipped because SONAR_TOKEN or SONAR_HOST_URL is not configured."
+          echo "See README.md for the one-time repository setup."

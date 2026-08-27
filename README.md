@@ -1,33 +1,65 @@
-An example project that uses [php-actions/phpunit][action-link]
-===
+# Example PHPUnit with SonarQube coverage
 
-This is a trivial project that holds only simple example functionality: a greeter that can greet you by name.
+Projeto PHP mínimo com testes PHPUnit e integração de cobertura no SonarQube.
 
-Check out the [**Actions tab** in the Github repository][actions-tab] to see the past actions workflows and their outputs.
+## Estrutura
 
-There are unit tests stored within the `test` directory, along with a `phpunit.xml`.
+- `src/`: código-fonte analisado;
+- `test/`: testes unitários;
+- `test/phpunit.xml`: configuração do PHPUnit;
+- `sonar-project.properties`: escopo e caminhos dos relatórios importados pelo Sonar;
+- `.github/workflows/ci.yml`: testes, geração da cobertura e análise do Sonar.
 
-The file at `.github/workflows/ci.yml` shows how to use [php-actions/phpunit][action-link] - take note of the `uses: php-actions/phpunit@v9` line.
+## Executar localmente
 
-Versions of PHPUnit and all options are available to configure. Please see the [php-actions/phpunit documentation][action-link] for more information! 
+Com Docker, não é necessário instalar PHP, Composer ou Xdebug no host:
 
-Functionality
--------------
+```sh
+docker compose run --rm tests
+```
 
-There are two classes in this example project; `Greeter` and `EnvGreeter`, in the `src/` directory, which are tested in the `test/` directory.
+Para executar sem Docker, os requisitos são PHP 8.3, Composer 2 e Xdebug com
+suporte a coverage:
 
-The `Greeter` has a function, `greet()` which takes an optional name. Without providing a name, the Greeter will return "Hello!", otherwise it will include the provided name, like "Hello, Example!".
+```sh
+composer install
+TEST_NAME=Scarlett XDEBUG_MODE=coverage composer test:coverage
+```
 
-The `EnvGreeter` extends `Greeter` and provides a new function, `greetFromEnv()`, which takes the name of an environment variable to load the name from.
+O comando gera:
 
-The GitHub Action tests are executed in the [`ci.yml` file](https://github.com/php-actions/example-phpunit/blob/e1db6474eec4dc75526042f9cf5dab2bf8f163f9/.github/workflows/ci.yml#L14-L21) where the TEST_NAME environment variable is declared, along with any other PHPUnit configuration.
+- `build/logs/clover.xml`: cobertura em formato Clover XML;
+- `build/logs/junit.xml`: resultado da execução dos testes em formato JUnit XML.
 
-Click the [Actions tab](https://github.com/php-actions/example-phpunit/actions) at the top of this repository to view the latest test runs.
+Os dois arquivos também ficam disponíveis no artefato `phpunit-reports` de cada
+execução do GitHub Actions.
 
-*** 
+## Enviar a cobertura ao SonarQube local
 
-If you found this repository helpful, please consider [sponsoring the developer][sponsor].
+O servidor local esperado é `http://127.0.0.1:9000`. Gere um token em
+**My Account > Security** e execute:
 
-[action-link]: https://github.com/php-actions/phpunit
-[actions-tab]: https://github.com/php-actions/example-phpunit/actions
-[sponsor]: https://github.com/sponsors/g105b
+```sh
+docker compose run --rm tests
+SONAR_TOKEN='seu-token' ./scripts/sonar-local.sh
+```
+
+O script usa a imagem oficial do SonarScanner, valida se o servidor e os dois
+relatórios estão disponíveis e envia o projeto `caioalbert_example-phpunit` ao
+dashboard local. Para outro endereço, informe também `SONAR_HOST_URL`.
+
+## GitHub Actions
+
+Todo push em `master`/`main` e todo pull request executa os testes, gera os
+relatórios e publica o artefato `phpunit-reports`.
+
+O runner hospedado do GitHub não consegue acessar o `localhost:9000` da máquina
+de desenvolvimento. Para executar também a análise no workflow, o servidor
+precisa estar acessível pelo runner ou o job deve usar um runner self-hosted.
+Nesse cenário, configure no repositório:
+
+- secret `SONAR_TOKEN`: token de análise;
+- variable `SONAR_HOST_URL`: URL alcançável do SonarQube.
+
+Sem essas duas configurações, apenas a etapa de análise é ignorada; os testes e
+a geração de cobertura continuam sendo executados normalmente.

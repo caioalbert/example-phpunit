@@ -1,6 +1,6 @@
 {
-	"name": "php-actions/example-phpunit",
-	"description": "Example project using php-actions/phpunit",
+	"name": "caioalbert/example-phpunit",
+	"description": "Example PHPUnit project with SonarQube coverage integration",
 
 	"require-dev": {
 		"ext-curl": "*",
@@ -18,5 +18,18 @@
 		"psr-4": {
 			"App\\Test\\": "test"
 		}
+	},
+	"config": {
+		"platform": {
+			"php": "8.3.0"
+		},
+		"sort-packages": true
+	},
+	"scripts": {
+		"test": "phpunit --configuration test/phpunit.xml",
+		"test:coverage": [
+			"@php -r \"is_dir('build/logs') || mkdir('build/logs', 0777, true);\"",
+			"phpunit --configuration test/phpunit.xml --coverage-clover build/logs/clover.xml --log-junit build/logs/junit.xml"
+		]
 	}
 }
