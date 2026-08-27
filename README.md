@@ -45,7 +45,7 @@ SONAR_TOKEN='seu-token' ./scripts/sonar-local.sh
 ```
 
 O script usa a imagem oficial do SonarScanner, valida se o servidor e os dois
-relatórios estão disponíveis e envia o projeto `caioalbert_example-phpunit` ao
+relatórios estão disponíveis e envia o projeto `teste-unit` ao
 dashboard local. Para outro endereço, informe também `SONAR_HOST_URL`.
 
 ## GitHub Actions
