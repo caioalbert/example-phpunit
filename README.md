@@ -54,12 +54,11 @@ Todo push em `master`/`main` e todo pull request executa os testes, gera os
 relatórios e publica o artefato `phpunit-reports`.
 
 O runner hospedado do GitHub não consegue acessar o `localhost:9000` da máquina
-de desenvolvimento. Para executar também a análise no workflow, o servidor
-precisa estar acessível pelo runner ou o job deve usar um runner self-hosted.
-Nesse cenário, configure no repositório:
+de desenvolvimento. O servidor externo configurado para este projeto está
+disponível em `http://23.99.252.192:9000`. Configure no repositório:
 
 - secret `SONAR_TOKEN`: token de análise;
-- variable `SONAR_HOST_URL`: URL alcançável do SonarQube.
+- secret `SONAR_HOST_URL`: `http://23.99.252.192:9000`.
 
 Sem essas duas configurações, apenas a etapa de análise é ignorada; os testes e
 a geração de cobertura continuam sendo executados normalmente.
